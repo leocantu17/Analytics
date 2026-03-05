@@ -58,6 +58,10 @@ app/
    npm run dev
    ```
 
+## Link de pruebas en Postman
+
+https://.postman.co/workspace/My-Workspace~da11899a-5c93-4c66-8019-74aabc52a1ef/collection/43877534-44ac5904-5434-41ef-920c-ca834bec8da4?action=share&creator=43877534&active-environment=43877534-05a149dd-b96e-4aec-acb1-b2341b6d365b
+
 ## Base de Datos y Seguridad
 
 El proyecto utiliza una tabla de control de accesos para gestionar la seguridad perimetral. Es necesario ejecutar los scripts SQL (ubicados en la documentación técnica) para activar:
