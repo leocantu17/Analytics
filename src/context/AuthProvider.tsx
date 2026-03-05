@@ -1,73 +1,59 @@
-'use client';
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Profile } from '@/types/database';
+"use client";
 
-const AuthContext = createContext<{
-  user: any;
-  profile: Profile | null;
-  loading: boolean;
-  refreshSession: () => Promise<void>;
-}>({ user: null, profile: null, loading: true, refreshSession: async () => {} });
+import { createContext, useContext, useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { Profile } from "@/types/database";
+
+const AuthContext = createContext<any>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('perfiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
-      if (error) throw error;
-      setProfile(data);
-    } catch (err) {
-      console.error("Error al obtener perfil:", err);
-      setProfile(null);
-    }
-  }, []);
+  const fetchProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from("perfiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
 
-  const refreshSession = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
-        await fetchProfile(session.user.id);
-      } else {
-        setUser(null);
-        setProfile(null);
-      }
-    } catch (err) {
-      console.error("Error en sesión:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchProfile]);
+    if (data) setProfile(data);
+  };
 
   useEffect(() => {
-    refreshSession();
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        await fetchProfile(session.user.id);
-      } else {
-        setUser(null);
-        setProfile(null);
-      }
-      setLoading(false);
-    });
+    const init = async () => {
+      const { data } = await supabase.auth.getUser();
 
-    return () => subscription.unsubscribe();
-  }, [refreshSession, fetchProfile]);
+      if (data.user) {
+        setUser(data.user);
+        await fetchProfile(data.user.id);
+      }
+
+      setLoading(false);
+    };
+
+    init();
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (session?.user) {
+          setUser(session.user);
+          await fetchProfile(session.user.id);
+        } else {
+          setUser(null);
+          setProfile(null);
+        }
+      }
+    );
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, refreshSession }}>
+    <AuthContext.Provider value={{ user, profile, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -3,10 +3,9 @@ import { useState } from "react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthProvider";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, AlertOctagon } from "lucide-react";
 
 export default function LoginForm() {
-  const { refreshSession } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -14,25 +13,49 @@ export default function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
 const handleLogin = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError(null);
-  setIsSubmitting(true);
+    e.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
 
-  try {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data: estado } = await supabase.rpc('verificar_estado_login', { p_email: email });
+      
+      if (estado?.bloqueado) {
+        setError("Cuenta bloqueada temporalmente. Intenta en 15 minutos.");
+        setIsSubmitting(false);
+        return;
+      }
 
-    if (error) throw error;
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
+      if (loginError) {
+        const { data: intento } = await supabase.rpc('registrar_intento', { 
+          p_email: email, 
+          p_exito: false 
+        });
+        
+        if (intento?.bloqueado) {
+          setError("Has superado los 5 intentos. Cuenta bloqueada por 15 minutos.");
+        } else {
+          const restantes = intento?.restantes ?? 5;
+          setError(`Credenciales incorrectas. Te quedan ${restantes} intentos.`);
+        }
+        setIsSubmitting(false);
+      } else {
+        await supabase.rpc('registrar_intento', { p_email: email, p_exito: true });
+        
 
-    window.location.href = '/dashboard'; 
-  } catch (err: any) {
-    setError("Credenciales incorrectas.");
-    setIsSubmitting(false);
-  }
-};
+        window.location.href = '/'; 
+      }
+    } catch (err) {
+      console.error("Login Error:", err);
+      setError("Error de conexión. Inténtalo de nuevo.");
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#000d2d] px-6 text-white font-sans">
@@ -55,8 +78,9 @@ const handleLogin = async (e: React.FormEvent) => {
 
         <form onSubmit={handleLogin} className="mt-8 space-y-4">
           {error && (
-            <div className="p-3 text-sm bg-red-500/10 border border-red-500/50 text-red-500 rounded-lg">
-              {error}
+            <div className="p-3 text-sm bg-red-500/10 border border-red-500/50 text-red-400 rounded-lg flex items-start gap-2">
+              <AlertOctagon size={18} className="mt-0.5 flex-shrink-0" />
+              <span>{error}</span>
             </div>
           )}
           <input
@@ -87,7 +111,7 @@ const handleLogin = async (e: React.FormEvent) => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-cyan-500 py-3 font-bold text-white hover:brightness-110 transition-all flex justify-center items-center"
+            className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-cyan-500 py-3 font-bold text-white hover:brightness-110 transition-all flex justify-center items-center disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <Loader2 className="animate-spin" size={20} />

@@ -17,10 +17,6 @@ export default function DashboardContent({ profile }: { profile: Profile | null 
       {isAdmin ? (
         <div className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* <div className="p-6 bg-white rounded-2xl shadow-sm border border-slate-200 hover:scale-105 transition-transform">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Ingresos Proyectados</p>
-              <h3 className="text-3xl font-black text-[#000d2d] mt-2">$45,200.00</h3>
-            </div> */}
           </div>
           <ProductTable />
         </div>

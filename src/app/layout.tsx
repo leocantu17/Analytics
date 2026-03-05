@@ -14,8 +14,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Turing-IA | Business Intelligence Dashboard",
+  title: "Proyecto E-commerce Analytics",
   description: "Panel administrativo de control de inventario y analítica desarrollado por Leonardo Cantú",
+  icons: {
+    icon: "/turing.webp",
+    shortcut: "/turing.webp",    
+    apple: "/turing.webp"
+  },
 };
 
 export default function RootLayout({
